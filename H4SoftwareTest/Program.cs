@@ -32,21 +32,26 @@ if (OperatingSystem.IsWindows())
     builder.Services.AddDbContext<ApplicationDbContext>(options =>
         options.UseSqlServer(connectionString));
     builder.Services.AddDatabaseDeveloperPageExceptionFilter();
-}
-else if (OperatingSystem.IsLinux())
-{
-    connectionString = builder.Configuration.GetConnectionString("MockConnection") ?? throw new InvalidOperationException("Connection string 'MockConnection' not found.");
-    builder.Services.AddDbContext<ApplicationDbContext>(options =>
-        options.UseSqlite(connectionString));
-    builder.Services.AddDatabaseDeveloperPageExceptionFilter();
-}
 
-
-builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
+    builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddSignInManager()
     .AddDefaultTokenProviders();
+}
+else if (OperatingSystem.IsLinux())
+{
+    connectionString = builder.Configuration.GetConnectionString("MockConnection") ?? throw new InvalidOperationException("Connection string 'MockConnection' not found.");
+    builder.Services.AddDbContext<ApplicationMockDbContext>(options =>
+        options.UseSqlite(connectionString));
+    builder.Services.AddDatabaseDeveloperPageExceptionFilter();
+
+    builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
+    .AddRoles<IdentityRole>()
+    .AddEntityFrameworkStores<ApplicationMockDbContext>()
+    .AddSignInManager()
+    .AddDefaultTokenProviders();
+}
 
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 
@@ -75,6 +80,23 @@ builder.Services.Configure<IdentityOptions>(options =>
 });
 
 builder.Services.AddSingleton<RoleHandler>();
+
+string userFolder = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+userFolder = Path.Combine(userFolder, ".aspnet","https","H4Cert.pfx");
+
+string kestrelPassword = builder.Configuration.GetValue<string>("KestrelPassword");
+
+builder.Configuration.GetSection("Kestrel:Endpoints:Https:Certificate:Path").Value = userFolder;
+builder.Configuration.GetSection("Kestrel:Endpoints:Https:Certificate:Password").Value = kestrelPassword;
+
+builder.WebHost.UseKestrel((context, serverOptions) =>
+{
+    serverOptions.Configure(context.Configuration.GetSection("Kestrel"))
+    .Endpoint("HTTPS", listenOptions =>
+    {
+        listenOptions.HttpsOptions.SslProtocols = System.Security.Authentication.SslProtocols.Tls12;
+    });
+});
 
 
 var app = builder.Build();
