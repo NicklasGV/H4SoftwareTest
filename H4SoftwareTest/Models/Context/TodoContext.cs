@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
-namespace H4SoftwareTest.Models
+namespace H4SoftwareTest.Models.Context
 {
     public partial class TodoContext : DbContext
     {

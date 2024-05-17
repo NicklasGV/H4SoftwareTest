@@ -2,7 +2,7 @@ using H4SoftwareTest.Codes;
 using H4SoftwareTest.Components;
 using H4SoftwareTest.Components.Account;
 using H4SoftwareTest.Data;
-using H4SoftwareTest.Models;
+using H4SoftwareTest.Models.Context;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -36,6 +36,7 @@ builder.Services.AddDbContext<TodoContext>(options =>
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
+    .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddSignInManager()
     .AddDefaultTokenProviders();
@@ -49,8 +50,13 @@ builder.Services.AddAuthorization(options =>
     {
         policy.RequireAuthenticatedUser();
     });
+    options.AddPolicy("RequireAdmin", policy =>
+    {
+        policy.RequireRole("Admin");
+    });
 });
 
+builder.Services.AddSingleton<RoleHandler>();
 
 builder.Services.Configure<IdentityOptions>(options =>
 {
@@ -62,7 +68,6 @@ builder.Services.Configure<IdentityOptions>(options =>
     options.Password.RequiredUniqueChars = 1;
 });
 
-builder.Services.AddSingleton<RoleHandler>();
 
 string userFolder = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
 userFolder = Path.Combine(userFolder, ".aspnet","https","H4Cert.pfx");

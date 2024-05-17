@@ -1,80 +1,97 @@
 ﻿@page "/"
-
+@inject Codes.RoleHandler _roleHandler;
+@inject IServiceProvider _serviceProvider;
 @inject NavigationManager _navigationManager
 @inject AuthenticationStateProvider _authenticationStateProvider
-@inject Models.TodoContext _todoContext
+@inject Models.Context.TodoContext _todoContext
 
 <PageTitle>Home</PageTitle>
 
 @if (_isAuthenticated)
 {
-    <h2 style="text-align:center;margin-top:10px;">@UserName</h2>
-    @if (CprFromDB == null)
-    {
-        <div style="margin: 0 auto;">
-            <div>Type your cpr-nr:</div>
-            <input type="text" @bind="@CprNr" style="width:160px;height:45px;" />
-            <br />
-            <input type="button" value="Submit" style="width:160px;height:45px; border-radius: 5px;background-color:blue;color:black;border:none;padding:10px 20px;cursor:pointer;" @onclick="SubmitCpr" />
-        </div>
-    }
-    else
-    {
-        <div style="margin: 0 auto;">
-            <h5>Your Cpr: @CprFromDB</h5>
-        </div>
+    <div style="display: grid; place-items: center;">
+        <h2>@UserName</h2>
 
-        <div style="margin: 0 auto;">
-            <div style="margin-top:15px">Todo item</div>
-            <input type="text" @bind="ToDoItem" style="width:150px;"/>
-            <br />
-            <button @onclick="SubmitTodoItem" style="width:150px;height:45px; border-radius: 5px;background-color:blue;color:black;border:none;padding:10px 20px;cursor:pointer;">Submit Item</button>
-            @if (Message != null)
-            {
-                <div>@Message</div>
-            }
-        </div>
+        @if (CprFromDB == null)
+        {
+            <div style="margin-bottom: 10px;">
+                <div>Type your cpr-nr:</div>
+                <input type="text" @bind="@CprNr" style="width:160px;height:35px;" />
+                <br />
+                <input type="button" value="Submit" style="width:160px;height:35px; border-radius: 5px;background-color:blue;color:black;border:none;padding:5px 20px;cursor:pointer;" @onclick="SubmitCpr" />
+                @if (Message != null)
+                {
+                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                        @Message
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" @onclick="() => CloseMessage()"></button>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div style="margin-bottom: 10px;">
+                <h5>Your Cpr: @CprFromDB</h5>
+            </div>
 
-        <div style="margin-top:18px;">
-            @if (TodoList != null && TodoList.Count > 0)
-            {
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>My to do items</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (TodoList != null && TodoList.Count > 0)
-                        {
+            <div style="margin-bottom: 10px;">
+                <div>Todo item</div>
+                <input type="text" @bind="ToDoItem" style="width:150px;height:35px;" />
+                <br />
+                <button @onclick="SubmitTodoItem" style="width:150px;height:35px; border-radius: 5px;background-color:blue;color:black;border:none;padding:5px 20px;cursor:pointer;">Submit Item</button>
+                @if (Message != null)
+                {
+                    <div class="alert-warning">@Message</div>
+                }
+            </div>
+
+            <div style="overflow-y: auto; width: 100%;">
+                @if (TodoList != null && TodoList.Count > 0)
+                {
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>My to do items</th>
+                                @if (_isAdmin)
+                                {
+                                    <th>Action</th>
+                                }
+                            </tr>
+                        </thead>
+                        <tbody>
                             @foreach (var item in TodoList)
                             {
                                 <tr>
                                     <td>@item.Item</td>
+                                    @if (_isAdmin)
+                                    {
+                                        <td><button @onclick="() => DeleteTodoItem(item.Id)" style="border-radius: 5px;background-color:red;color:black;border:none;padding:5px 20px;cursor:pointer;">Delete</button></td>
+                                    }
                                 </tr>
                             }
-                        }
-                    </tbody>
-                </table>
-            }
-        </div>
-    }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        }
+    </div>
 }
 else if (!_isAuthenticated)
 {
-    <div>
+    <div style="text-align:center;">
         <h2>Not logged in</h2>
         <div>
             <p>
-                Its sadly been spotted that you havent logged in
+                It's sadly been spotted that you haven't logged in
             </p>
 
-            <div>
+            <div style="margin-top: 10px;">
                 Please press this button to return to login :D
                 <br />
                 <button @onclick="NavigateToLogin"
-                style="border-radius: 5px;background-color:blue;color:black;border:none;padding:10px 20px;cursor:pointer;"    
-                >Login</button>
+                        style="border-radius: 5px;background-color:blue;color:black;border:none;padding:5px 20px;cursor:pointer;">
+                    Login
+                </button>
             </div>
         </div>
     </div>
@@ -89,13 +106,20 @@ else if (!_isAuthenticated)
     private string? Message { get; set; }
     private string? CprMessage { get; set; }
     public bool _isAuthenticated;
+    public bool _isAdmin;
 
     protected override async Task OnInitializedAsync()
     {
-        var authenticationState = await _authenticationStateProvider.GetAuthenticationStateAsync();
-        var user = authenticationState.User;
-        UserName = authenticationState.User.Identity.Name;
-        _isAuthenticated = authenticationState.User.Identity.IsAuthenticated;
+        var authState = await _authenticationStateProvider.GetAuthenticationStateAsync();
+        var currentUser = authState.User;
+        UserName = authState.User.Identity.Name;
+        _isAuthenticated = currentUser.Identity.IsAuthenticated;
+        _isAdmin = currentUser.IsInRole("Admin");
+
+        // if (_isAuthenticated)
+        // {
+        //     await _roleHandler.CreateUserRolesAsync(currentUser.Identity.Name, "Admin", _serviceProvider);
+        // }
     }
 
     private void SubmitCpr()
@@ -133,18 +157,36 @@ else if (!_isAuthenticated)
 
     private void SubmitTodoItem()
     {
-        var todoListTemp = _todoContext.Todolists.ToList();
-        todoListTemp = todoListTemp.Where(x => x.User == UserName).ToList();
-        var todo = new Models.Todolist
-            {
-                User = UserName,
-                Item = ToDoItem
-            };
-        _todoContext.Todolists.Add(todo);
-        _todoContext.SaveChanges();
+        if (ToDoItem == null || ToDoItem == "")
+        {
+            Message = "Item needs data";
+        }
+        else
+        {
+            var todoListTemp = _todoContext.Todolists.ToList();
+            todoListTemp = todoListTemp.Where(x => x.User == UserName).ToList();
+            var todo = new Models.Todolist
+                {
+                    User = UserName,
+                    Item = ToDoItem
+                };
+            _todoContext.Todolists.Add(todo);
+            _todoContext.SaveChanges();
 
-        TodoList = _todoContext.Todolists.ToList().Where(x => x.User == UserName).ToList();
-        ToDoItem = "";
+            TodoList = _todoContext.Todolists.ToList().Where(x => x.User == UserName).ToList();
+            ToDoItem = "";
+        }
+    }
+
+    private void DeleteTodoItem(int itemId)
+    {
+        var itemToDelete = TodoList.FirstOrDefault(x => x.Id == itemId);
+        if (itemToDelete != null)
+        {
+            _todoContext.Todolists.Remove(itemToDelete);
+            _todoContext.SaveChanges();
+            TodoList.Remove(itemToDelete);
+        }
     }
 
     private void NavigateToLogin()
