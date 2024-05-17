@@ -1,31 +1,154 @@
 ﻿@page "/"
-@* @attribute [Microsoft.AspNetCore.Authorization.Authorize(Policy = "AuthenticatedUser")] *@
 
-@inject AuthenticationStateProvider _authenticationStateProvider;
-@inject IServiceProvider _serviceProvider
+@inject NavigationManager _navigationManager
+@inject AuthenticationStateProvider _authenticationStateProvider
+@inject Models.TodoContext _todoContext
 
 <PageTitle>Home</PageTitle>
 
-<h1>Hello, world!</h1>
-<br />
-<div>
-    Hello Again
-</div>
+@if (_isAuthenticated)
+{
+    <h2 style="text-align:center;margin-top:10px;">@UserName</h2>
+    @if (CprFromDB == null)
+    {
+        <div style="margin: 0 auto;">
+            <div>Type your cpr-nr:</div>
+            <input type="text" @bind="@CprNr" style="width:160px;height:45px;" />
+            <br />
+            <input type="button" value="Submit" style="width:160px;height:45px; border-radius: 5px;background-color:blue;color:black;border:none;padding:10px 20px;cursor:pointer;" @onclick="SubmitCpr" />
+        </div>
+    }
+    else
+    {
+        <div style="margin: 0 auto;">
+            <h5>Your Cpr: @CprFromDB</h5>
+        </div>
+
+        <div style="margin: 0 auto;">
+            <div style="margin-top:15px">Todo item</div>
+            <input type="text" @bind="ToDoItem" style="width:150px;"/>
+            <br />
+            <button @onclick="SubmitTodoItem" style="width:150px;height:45px; border-radius: 5px;background-color:blue;color:black;border:none;padding:10px 20px;cursor:pointer;">Submit Item</button>
+            @if (Message != null)
+            {
+                <div>@Message</div>
+            }
+        </div>
+
+        <div style="margin-top:18px;">
+            @if (TodoList != null && TodoList.Count > 0)
+            {
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>My to do items</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (TodoList != null && TodoList.Count > 0)
+                        {
+                            @foreach (var item in TodoList)
+                            {
+                                <tr>
+                                    <td>@item.Item</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    }
+}
+else if (!_isAuthenticated)
+{
+    <div>
+        <h2>Not logged in</h2>
+        <div>
+            <p>
+                Its sadly been spotted that you havent logged in
+            </p>
+
+            <div>
+                Please press this button to return to login :D
+                <br />
+                <button @onclick="NavigateToLogin"
+                style="border-radius: 5px;background-color:blue;color:black;border:none;padding:10px 20px;cursor:pointer;"    
+                >Login</button>
+            </div>
+        </div>
+    </div>
+}
 
 @code {
+    private string? UserName { get; set; }
+    private string? CprNr { get; set; }
+    private string? CprFromDB { get; set; }
+    private string? ToDoItem { get; set; } = "";
+    private List<Models.Todolist>? TodoList { get; set; } = new List<Models.Todolist>();
+    private string? Message { get; set; }
+    private string? CprMessage { get; set; }
     public bool _isAuthenticated;
-    private bool _isAdmin;
 
     protected override async Task OnInitializedAsync()
     {
-        var authState = await _authenticationStateProvider.GetAuthenticationStateAsync();
-        var user = authState.User;
-        _isAuthenticated = user.Identity.IsAuthenticated;
-        _isAdmin = user.IsInRole("Admin");
+        var authenticationState = await _authenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authenticationState.User;
+        UserName = authenticationState.User.Identity.Name;
+        _isAuthenticated = authenticationState.User.Identity.IsAuthenticated;
+    }
 
-        // if(_isAuthenticated)
-        // {
-        //     await _roleHandler.CreateUserRoleAsync(user.Identity.Name, "Admin", _serviceProvider);
-        // }
+    private void SubmitCpr()
+    {
+        string cprHashed = Codes.HashingHandler.BCryptHashing(CprNr);
+
+        var matchedUser = _todoContext.Cprs.FirstOrDefault(x => x.User == UserName);
+        if (matchedUser == null)
+        {
+            var cpr = new Models.Cpr
+                {
+                    User = UserName,
+                    CprNr = cprHashed
+                };
+            _todoContext.Cprs.Add(cpr);
+            _todoContext.SaveChanges();
+
+            CprFromDB = _todoContext.Cprs.FirstOrDefault(x => x.User == UserName)?.CprNr;
+        }
+        else
+        {
+            bool hashedValueMatch = Codes.HashingHandler.BCryptVerifyHashing(CprNr, matchedUser.CprNr);
+            if (hashedValueMatch)
+            {
+                TodoList = _todoContext.Todolists.ToList().Where(x => x.User == UserName).ToList();
+                CprFromDB = _todoContext.Cprs.FirstOrDefault(x => x.User == UserName)?.CprNr;
+                CprMessage = null;
+            }
+            else
+            {
+                CprMessage = "Cpr-nr er forkert!";
+            }
+        }
+    }
+
+    private void SubmitTodoItem()
+    {
+        var todoListTemp = _todoContext.Todolists.ToList();
+        todoListTemp = todoListTemp.Where(x => x.User == UserName).ToList();
+        var todo = new Models.Todolist
+            {
+                User = UserName,
+                Item = ToDoItem
+            };
+        _todoContext.Todolists.Add(todo);
+        _todoContext.SaveChanges();
+
+        TodoList = _todoContext.Todolists.ToList().Where(x => x.User == UserName).ToList();
+        ToDoItem = "";
+    }
+
+    private void NavigateToLogin()
+    {
+        _navigationManager.NavigateTo("account/login");
     }
 }

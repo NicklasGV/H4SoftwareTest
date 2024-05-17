@@ -2,6 +2,7 @@ using H4SoftwareTest.Codes;
 using H4SoftwareTest.Components;
 using H4SoftwareTest.Components.Account;
 using H4SoftwareTest.Data;
+using H4SoftwareTest.Models;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -24,34 +25,20 @@ builder.Services.AddAuthentication(options =>
     })
     .AddIdentityCookies();
 
-var connectionString = "";
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlServer(connectionString));
 
-if (OperatingSystem.IsWindows())
-{
-    connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
-    builder.Services.AddDbContext<ApplicationDbContext>(options =>
-        options.UseSqlServer(connectionString));
-    builder.Services.AddDatabaseDeveloperPageExceptionFilter();
+var toDoConnectionString = builder.Configuration.GetConnectionString("TodoConnection") ?? throw new InvalidOperationException("Connection string 'TodoConnection' not found.");
+builder.Services.AddDbContext<TodoContext>(options =>
+    options.UseSqlServer(toDoConnectionString));
 
-    builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
-    .AddRoles<IdentityRole>()
+builder.Services.AddDatabaseDeveloperPageExceptionFilter();
+
+builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddSignInManager()
     .AddDefaultTokenProviders();
-}
-else if (OperatingSystem.IsLinux())
-{
-    connectionString = builder.Configuration.GetConnectionString("MockConnection") ?? throw new InvalidOperationException("Connection string 'MockConnection' not found.");
-    builder.Services.AddDbContext<ApplicationMockDbContext>(options =>
-        options.UseSqlite(connectionString));
-    builder.Services.AddDatabaseDeveloperPageExceptionFilter();
-
-    builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
-    .AddRoles<IdentityRole>()
-    .AddEntityFrameworkStores<ApplicationMockDbContext>()
-    .AddSignInManager()
-    .AddDefaultTokenProviders();
-}
 
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 
@@ -61,10 +48,6 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("AuthenticatedUser", policy =>
     {
         policy.RequireAuthenticatedUser();
-    });
-    options.AddPolicy("RequireAdmin", policy =>
-    {
-        policy.RequireRole("Admin");
     });
 });
 
