@@ -29,7 +29,7 @@ namespace H4SoftwareTest.Codes
 
         public static string HMACHashing(string textToHash)
         {
-            byte[] myKey = Encoding.ASCII.GetBytes("NielsErMinFavoritLære");
+            byte[] myKey = Encoding.ASCII.GetBytes("BCRYPTERBEDRE");
             byte[] inputBytes = Encoding.ASCII.GetBytes(textToHash);
 
             HMACSHA256 hmac = new HMACSHA256();
@@ -42,7 +42,7 @@ namespace H4SoftwareTest.Codes
         public static string PBKDF2Hashing(string textToHash)
         {
             byte[] inputBytes = Encoding.ASCII.GetBytes(textToHash);
-            byte[] salt = Encoding.ASCII.GetBytes("NielsErMinFavoritLære");
+            byte[] salt = Encoding.ASCII.GetBytes("BCRYPTERBEDRE");
             var hashAlgorythm = new HashAlgorithmName("SHA256");
             int itirationer = 10;
             int outputLength = 32;
@@ -51,7 +51,7 @@ namespace H4SoftwareTest.Codes
             return Convert.ToBase64String(hashedValue);
         }
 
-        // BCrypt.Net-Next
+        // Download nuGget pakke "BCrypt.Net-Next"
         public static string BCryptHashing(string textToHash)
         {
             string salt = BCrypt.Net.BCrypt.GenerateSalt();

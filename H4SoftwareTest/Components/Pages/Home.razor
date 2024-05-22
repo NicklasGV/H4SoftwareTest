@@ -16,32 +16,35 @@
         {
             <div style="margin-bottom: 10px;">
                 <div>Type your cpr-nr:</div>
-                <input type="text" @bind="@CprNr" style="width:160px;height:35px;" />
-                <br />
-                <input type="button" value="Submit" style="width:160px;height:35px; border-radius: 5px;background-color:blue;color:black;border:none;padding:5px 20px;cursor:pointer;" @onclick="SubmitCpr" />
+                <div style="display: flex; align-items: center;">
+                    <input type="text" @bind="@CprNr" style="width:160px;height:35px;" />
+                    <button style="height:35px; border-radius: 5px;background-color:blue;color:black;border:none;cursor:pointer;" @onclick="SubmitCpr">Submit</button>
+                </div>
                 @if (Message != null)
                 {
-                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
-                        @Message
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" @onclick="() => CloseMessage()"></button>
+                    <div>
+                        @CprMessage
                     </div>
                 }
             </div>
         }
         else
         {
-            <div style="margin-bottom: 10px;">
-                <h5>Your Cpr: @CprFromDB</h5>
+            <div>
+                <h3>Dit cpr-nr:</h3>
+                <h5>@CprFromDB</h5>
             </div>
-
             <div style="margin-bottom: 10px;">
                 <div>Todo item</div>
-                <input type="text" @bind="ToDoItem" style="width:150px;height:35px;" />
-                <br />
-                <button @onclick="SubmitTodoItem" style="width:150px;height:35px; border-radius: 5px;background-color:blue;color:black;border:none;padding:5px 20px;cursor:pointer;">Submit Item</button>
+                <div style="display: flex; align-items: center;">
+                    <input type="text" @bind="ToDoItem" style="width:150px;height:35px;" />
+                    <button @onclick="SubmitTodoItem" style="height:35px; border-radius: 5px;background-color:blue;color:black;border:none;cursor:pointer;">Submit Item</button>
+                </div>
                 @if (Message != null)
                 {
-                    <div class="alert-warning">@Message</div>
+                    <div>
+                        @Message
+                    </div>
                 }
             </div>
 
