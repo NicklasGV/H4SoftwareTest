@@ -57,6 +57,7 @@ builder.Services.AddAuthorization(options =>
 });
 
 builder.Services.AddSingleton<RoleHandler>();
+builder.Services.AddSingleton<EncryptionHandler>();
 
 builder.Services.Configure<IdentityOptions>(options =>
 {

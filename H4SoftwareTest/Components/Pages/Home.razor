@@ -1,9 +1,10 @@
 ﻿@page "/"
-@inject Codes.RoleHandler _roleHandler;
-@inject IServiceProvider _serviceProvider;
+@inject Codes.RoleHandler _roleHandler
+@inject IServiceProvider _serviceProvider
 @inject NavigationManager _navigationManager
 @inject AuthenticationStateProvider _authenticationStateProvider
 @inject Models.Context.TodoContext _todoContext
+@inject Codes.EncryptionHandler _encryptionHandler
 
 <PageTitle>Home</PageTitle>
 
@@ -65,7 +66,7 @@
                             @foreach (var item in TodoList)
                             {
                                 <tr>
-                                    <td>@item.Item</td>
+                                    <td>@_encryptionHandler.DecryptSymmetric(@item.Item)</td>
                                     @if (_isAdmin)
                                     {
                                         <td><button @onclick="() => DeleteTodoItem(item.Id)" style="border-radius: 5px;background-color:red;color:black;border:none;padding:5px 20px;cursor:pointer;">Delete</button></td>
@@ -169,10 +170,10 @@ else if (!_isAuthenticated)
             var todoListTemp = _todoContext.Todolists.ToList();
             todoListTemp = todoListTemp.Where(x => x.User == UserName).ToList();
             var todo = new Models.Todolist
-                {
-                    User = UserName,
-                    Item = ToDoItem
-                };
+            {
+                User = UserName,
+                Item = _encryptionHandler.EncryptSymmetric(ToDoItem)
+            };
             _todoContext.Todolists.Add(todo);
             _todoContext.SaveChanges();
 
