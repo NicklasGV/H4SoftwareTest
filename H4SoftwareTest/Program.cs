@@ -87,6 +87,8 @@ builder.WebHost.UseKestrel((context, serverOptions) =>
     });
 });
 
+builder.Services.AddHttpClient();
+
 
 var app = builder.Build();
 

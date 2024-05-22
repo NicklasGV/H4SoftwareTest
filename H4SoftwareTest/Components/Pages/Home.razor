@@ -1,4 +1,5 @@
 ﻿@page "/"
+@using Newtonsoft.Json
 @inject Codes.RoleHandler _roleHandler
 @inject IServiceProvider _serviceProvider
 @inject NavigationManager _navigationManager
@@ -31,15 +32,12 @@
         }
         else
         {
-            <div>
-                <h3>Dit cpr-nr:</h3>
-                <h5>@CprFromDB</h5>
-            </div>
             <div style="margin-bottom: 10px;">
                 <div>Todo item</div>
                 <div style="display: flex; align-items: center;">
                     <input type="text" @bind="ToDoItem" style="width:150px;height:35px;" />
-                    <button @onclick="SubmitTodoItem" style="height:35px; border-radius: 5px;background-color:blue;color:black;border:none;cursor:pointer;">Submit Item</button>
+                    <button @onclick="SubmitTodoItemAsymmetric" style="height:35px; border-radius: 5px;background-color:blue;color:black;border:none;cursor:pointer;">Submit Item Asymmetric</button>
+                    <button @onclick="SubmitTodoItemSymmetric" style="height:35px; border-radius: 5px;background-color:blue;color:black;border:none;cursor:pointer;">Submit Item Symmetric</button>
                 </div>
                 @if (Message != null)
                 {
@@ -66,10 +64,21 @@
                             @foreach (var item in TodoList)
                             {
                                 <tr>
-                                    <td>@_encryptionHandler.DecryptSymmetric(@item.Item)</td>
-                                    @if (_isAdmin)
+                                    @if (item.IsAsymmetric == true)
                                     {
-                                        <td><button @onclick="() => DeleteTodoItem(item.Id)" style="border-radius: 5px;background-color:red;color:black;border:none;padding:5px 20px;cursor:pointer;">Delete</button></td>
+                                        <td>@_encryptionHandler.DecryptAsymmetric(@item.Item)</td>
+                                        @if (_isAdmin)
+                                        {
+                                            <td><button @onclick="() => DeleteTodoItem(item.Id)" style="border-radius: 5px;background-color:red;color:black;border:none;padding:5px 20px;cursor:pointer;">Delete</button></td>
+                                        }
+                                    }
+                                    else @if (item.IsAsymmetric == false)
+                                    {
+                                        <td>@_encryptionHandler.DecryptSymmetric(@item.Item)</td>
+                                        @if (_isAdmin)
+                                        {
+                                            <td><button @onclick="() => DeleteTodoItem(item.Id)" style="border-radius: 5px;background-color:red;color:black;border:none;padding:5px 20px;cursor:pointer;">Delete</button></td>
+                                        }
                                     }
                                 </tr>
                             }
@@ -159,7 +168,8 @@ else if (!_isAuthenticated)
         }
     }
 
-    private void SubmitTodoItem()
+    #region Asymmetric Todo
+    private void SubmitTodoItemAsymmetric()
     {
         if (ToDoItem == null || ToDoItem == "")
         {
@@ -170,10 +180,11 @@ else if (!_isAuthenticated)
             var todoListTemp = _todoContext.Todolists.ToList();
             todoListTemp = todoListTemp.Where(x => x.User == UserName).ToList();
             var todo = new Models.Todolist
-            {
-                User = UserName,
-                Item = _encryptionHandler.EncryptSymmetric(ToDoItem)
-            };
+                {
+                    User = UserName,
+                    Item = _encryptionHandler.EncryptAsymmetric(ToDoItem),
+                    IsAsymmetric = true
+        };
             _todoContext.Todolists.Add(todo);
             _todoContext.SaveChanges();
 
@@ -181,6 +192,33 @@ else if (!_isAuthenticated)
             ToDoItem = "";
         }
     }
+    #endregion
+
+    #region Symmetric Todo
+    private void SubmitTodoItemSymmetric()
+    {
+        if (ToDoItem == null || ToDoItem == "")
+        {
+            Message = "Item needs data";
+        }
+        else
+        {
+            var todoListTemp = _todoContext.Todolists.ToList();
+            todoListTemp = todoListTemp.Where(x => x.User == UserName).ToList();
+            var todo = new Models.Todolist
+                {
+                    User = UserName,
+                    Item = _encryptionHandler.EncryptSymmetric(ToDoItem),
+                    IsAsymmetric = false
+                };
+            _todoContext.Todolists.Add(todo);
+            _todoContext.SaveChanges();
+
+            TodoList = _todoContext.Todolists.ToList().Where(x => x.User == UserName).ToList();
+            ToDoItem = "";
+        }
+    }
+    #endregion
 
     private void DeleteTodoItem(int itemId)
     {

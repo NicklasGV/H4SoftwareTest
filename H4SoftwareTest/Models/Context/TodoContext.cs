@@ -42,6 +42,7 @@ namespace H4SoftwareTest.Models.Context
 
                 entity.Property(e => e.Item).HasMaxLength(500);
                 entity.Property(e => e.User).HasMaxLength(500);
+                entity.Property(e => e.IsAsymmetric);
             });
 
             OnModelCreatingPartial(modelBuilder);

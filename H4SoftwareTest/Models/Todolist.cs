@@ -7,5 +7,6 @@
         public string User { get; set; } = null!;
 
         public string Item { get; set; } = null!;
+        public bool IsAsymmetric { get; set; }
     }
 }
